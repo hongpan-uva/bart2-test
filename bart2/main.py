@@ -10,6 +10,27 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 ADAPTIVE_LASSO_MAXSAMPLES = 20  # TODO: should we fix it?
 
 
+def find_tied_intervals(counting, positions):
+    # find continuous udhs with same scores
+    # tied_dict held 0-initialize start and end positions of tied intervals
+    tied_dict = dict()
+    interval_start = False
+    for i in range(0, (len(positions)-1)):
+        if interval_start == True:
+            if counting[positions[i]] == counting[positions[i+1]]:
+                tied_dict[current_ptr] = i+1
+            else:
+                interval_start = False
+        elif counting[positions[i]] == counting[positions[i+1]]:
+            interval_start = True
+            current_ptr = i
+            tied_dict[current_ptr] = i+1
+    tied_list = []
+    for k in tied_dict.keys():
+        tied_list.append((k, tied_dict[k]))
+    return (tied_list)
+
+
 def bart(options):
     args = OptValidator.opt_validate(options)
 
@@ -99,7 +120,7 @@ def bart(options):
             sys.stderr.write("Error: generating enhancer profile! \n")
             sys.exit(1)
 
-        # get ranked score UDHS positions from enhancer profile
+        # get ranked score UDHS positions (IDs) from enhancer profile
         # positions = AUCcalc.get_position_list(enhancer_profile)
         positions = sorted(counting.keys(), key=counting.get, reverse=True)
 
@@ -120,23 +141,7 @@ def bart(options):
         sys.stdout.flush()
         positions = sorted(counting.keys(), key=counting.get, reverse=True)
 
-    # find tied intervals
-    # tied_dict held 0-initialize start and end positions of tied intervals
-    tied_dict = dict()
-    interval_start = False
-    for i in range(0, (len(positions)-1)):
-        if interval_start == True:
-            if counting[positions[i]] == counting[positions[i+1]]:
-                tied_dict[current_ptr] = i+1
-            else:
-                interval_start = False
-        elif counting[positions[i]] == counting[positions[i+1]]:
-            interval_start = True
-            current_ptr = i
-            tied_dict[current_ptr] = i+1
-    tied_list = []
-    for k in tied_dict.keys():
-        tied_list.append((k, tied_dict[k]))
+    tied_list = find_tied_intervals(counting, positions)
 
     print(str(len(tied_list))+" tied intervals")
 
@@ -150,8 +155,7 @@ def bart(options):
     WriteFile.write_auc(args, tf_aucs, tf_index)
     sys.stdout.flush()
 
-    stat_file = args.ofilename + '_bart_results.txt'
-    stat_df = StatTest.stat_test(tf_aucs, tf_index, stat_file, args.normfile)
+    stat_df = StatTest.stat_test(tf_aucs, tf_index, args.normfile)
     WriteFile.write_bart_result(args, stat_df)
     sys.stdout.flush()
     sys.stdout.write("Congratulations! BART job finished successfully!\n")

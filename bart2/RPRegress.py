@@ -101,9 +101,9 @@ def readregpotfiles(sym, genome, samplenames, h5file):
     nsamples = len(samplenames)
 
     refseqID = read_hdf5(h5file, 'refseqID')
-    print(refseqID)
+    # print(refseqID)
     symID = read_hdf5(h5file, 'symbol')
-    print(symID)
+    # print(symID)
     chrom = read_hdf5(h5file, 'chr')
     start = read_hdf5(h5file, 'start')
     for k, name in enumerate(samplenames):
@@ -138,18 +138,20 @@ def readregpotfiles(sym, genome, samplenames, h5file):
     z = dataset()
     z.rpfiles = samplenames
     z.x = x  # x.shape = ngenes,nsamples  # x is RP not relative RP, change to relative RP
-    print(np.median(x, axis=1))
+    # print(np.median(x, axis=1))
 
     z.index = index  # {symbol:'start position'}
     z.info = info  # {'symbol':[chr,start]}
     return z
 
+# either fname or genelist is required
 
-def read_genelistOnly(sym, fname, index, exptype):
+
+def read_genelistOnly(sym, index, exptype, fname=None, genes=None):
 
     status = np.zeros(len(index))
     genenames = np.ndarray(shape=(len(index)), dtype=object)
-    print(list(index.keys())[0:20])
+    # print(list(index.keys())[0:20])
 
     train_chroms = ['chr1', 'chr3', 'chr5', 'chr7', 'chr9',
                     'chr11', 'chr13', 'chr15', 'chr17', 'chr19', 'chr21']
@@ -158,11 +160,12 @@ def read_genelistOnly(sym, fname, index, exptype):
     train_index = []
     test_index = []
 
-    fp = open(fname).readlines()
-    genes = [g.strip() for g in fp]
+    if genes == None:
+        fp = open(fname).readlines()
+        genes = [g.strip() for g in fp]
 
     allgenes = list(sym.keys())
-    print(allgenes[0:20])
+    # print(allgenes[0:20])
 
     for ag in allgenes:
         if exptype == 'Gene_Only':
@@ -358,7 +361,10 @@ def main(args):
 
     '''
     # read all parameters from arguments
-    gxfile = args.expr  # input gene symbols/refseqID
+    if hasattr(args, "expr"):
+        gxfile = args.expr  # input gene symbols/refseqID
+    if hasattr(args, "genelist"):
+        genelist = args.genelist  # argument for passing a list directly
     name = args.name  # output name
     exptype = args.exptype
 
@@ -384,8 +390,12 @@ def main(args):
     if transform == 'sqrt':
         z.x = sqrttransform(z.x)
 
-    (genenames, z.y, train_index, test_index) = read_genelistOnly(
-        sym, gxfile, z.index, exptype)
+    if hasattr(args, "genelist") == False:
+        (genenames, z.y, train_index, test_index) = read_genelistOnly(
+            sym=sym, fname=gxfile, index=z.index, exptype=exptype)
+    else:
+        (genenames, z.y, train_index, test_index) = read_genelistOnly(
+            sym=sym, genes=genelist, index=z.index, exptype=exptype)
 
     sys.stdout.flush()
     print('Do regrssion with TARGET genes...')
