@@ -25,6 +25,8 @@ var/
 
 *.gz
 
+*.DS_Store
+
 # bart output file
 bart_output/
 
