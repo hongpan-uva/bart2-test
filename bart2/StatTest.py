@@ -65,60 +65,60 @@ def stat_test(AUCs, tf_dict, normfile):
             'rank_auc', 'rank_avg_z_p', 'rank_avg_z_p_a', 'rank_avg_z_p_a_irwinhall_pvalue']
     stat = pd.DataFrame(index=[tf for tf in tfs], columns=cols, dtype=object)
     for tf in tfs.keys():
-        stat.loc[tf]['avg_auc'] = np.mean(tfs[tf])
+        stat.loc[tf, 'avg_auc'] = np.mean(tfs[tf])
         if len(tfs[tf]) > 0:  # filter the tf with few samples
             stat_test = stats.ranksums(tfs[tf], sam1)
-            stat.loc[tf]['score'] = stat_test[0]
+            stat.loc[tf, 'score'] = stat_test[0]
             # one-sided test
-            stat.loc[tf]['pvalue'] = stat_test[1] * \
+            stat.loc[tf, 'pvalue'] = stat_test[1] * \
                 0.5 if stat_test[0] > 0 else 1-stat_test[1]*0.5
 
     tf_stats = pd.read_csv(normfile, sep='\t', index_col=0)
     # cal the normalized stat-score
     sys.stdout.write('Do standardization...')
     for i in stat.index:
-        # stat[i].append((stat[i][0]-tf_stats.loc[i,'mean'])/tf_stats.loc[i,'std']) #[2] for Z-Score
+        # stat[i].append((stat[i, 0]-tf_stats.loc[i,'mean'])/tf_stats.loc[i,'std']) #[2] for Z-Score
         try:
-            stat.loc[i]['zscore'] = (
-                stat.loc[i]['score']-tf_stats.loc[i, 'mean'])/tf_stats.loc[i, 'std']
-            stat.loc[i]['max_auc'] = max(tfs[i])
+            stat.loc[i, 'zscore'] = (
+                stat.loc[i, 'score']-tf_stats.loc[i, 'mean'])/tf_stats.loc[i, 'std']
+            stat.loc[i, 'max_auc'] = max(tfs[i])
         except KeyError:
-            stat.loc[i]['zscore'] = 0.0
-            stat.loc[i]['max_auc'] = 0.0
+            stat.loc[i, 'zscore'] = 0.0
+            stat.loc[i, 'max_auc'] = 0.0
 
     # rank the list by the average rank of stat-score and z-score
     # rank of Wilcoxon Socre
     rs = 1
-    for i in sorted(stat.index, key=lambda x: stat.loc[x]['score'], reverse=True):
-        stat.loc[i]['rank_score'] = rs  # rank of stat_score
+    for i in sorted(stat.index, key=lambda x: stat.loc[x, 'score'], reverse=True):
+        stat.loc[i, 'rank_score'] = rs  # rank of stat_score
         rs += 1
 
     # rank of Z-Score
     rz = 1
-    for i in sorted(stat.index, key=lambda x: stat.loc[x]['zscore'], reverse=True):
-        stat.loc[i]['rank_zscore'] = rz  # rank of z-score
+    for i in sorted(stat.index, key=lambda x: stat.loc[x, 'zscore'], reverse=True):
+        stat.loc[i, 'rank_zscore'] = rz  # rank of z-score
         rz += 1
 
     # rank of pvalue
     rp = 1
-    for i in sorted(stat.index, key=lambda x: stat.loc[x]['pvalue'], reverse=False):
-        stat.loc[i]['rank_pvalue'] = rp  # rank of pvalue
+    for i in sorted(stat.index, key=lambda x: stat.loc[x, 'pvalue'], reverse=False):
+        stat.loc[i, 'rank_pvalue'] = rp  # rank of pvalue
         rp += 1
 
     ra = 1
-    for i in sorted(stat.index, key=lambda x: stat.loc[x]['max_auc'], reverse=True):
-        stat.loc[i]['rank_auc'] = ra  # rank of pvalue
+    for i in sorted(stat.index, key=lambda x: stat.loc[x, 'max_auc'], reverse=True):
+        stat.loc[i, 'rank_auc'] = ra  # rank of pvalue
         ra += 1
 
     # rank of average
     for i in stat.index:
         # [6] for average of stat-score and z-score
-        stat.loc[i]['rank_avg_z_p'] = (
-            stat.loc[i]['rank_zscore']+stat.loc[i]['rank_pvalue'])*0.5
-        stat.loc[i]['rank_avg_z_p_a'] = (stat.loc[i]['rank_zscore']+stat.loc[i]['rank_pvalue'] +
-                                         stat.loc[i]['rank_auc'])*0.33/len(tfs.keys())   # [7] for average of three
-        stat.loc[i]['rank_avg_z_p_a_irwinhall_pvalue'] = irwin_hall_cdf(
-            3*stat.loc[i]['rank_avg_z_p_a'], 3)
+        stat.loc[i, 'rank_avg_z_p'] = (
+            stat.loc[i, 'rank_zscore']+stat.loc[i, 'rank_pvalue'])*0.5
+        stat.loc[i, 'rank_avg_z_p_a'] = (stat.loc[i, 'rank_zscore']+stat.loc[i, 'rank_pvalue'] +
+                                         stat.loc[i, 'rank_auc'])*0.33/len(tfs.keys())   # [7] for average of three
+        stat.loc[i, 'rank_avg_z_p_a_irwinhall_pvalue'] = irwin_hall_cdf(
+            3*stat.loc[i, 'rank_avg_z_p_a'], 3)
 
     stat = stat.sort_values(by='rank_avg_z_p_a', axis=0)
 
