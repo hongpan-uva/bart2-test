@@ -1,7 +1,6 @@
 setuptools
 tables==3.9.2
-blosc2==2.7.0
-scikit-build==0.17.6
+blosc2==2.3.2
 numpy==1.26.4
 pandas==2.1.4
 scipy==1.13.1
