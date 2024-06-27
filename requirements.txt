@@ -1,8 +1,7 @@
 setuptools
 tables
 numpy
-scikit-build
-pandas
+pandas==2.1.4
 scipy==1.13.1
 matplotlib
 scikit-learn
