@@ -1,6 +1,7 @@
 setuptools
 tables
 numpy
+scikit-build
 pandas
 scipy==1.13.1
 matplotlib
